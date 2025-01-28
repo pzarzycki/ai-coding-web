@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            overflow-x: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .custom-container {
+            display: flex;
+            flex-direction: column;
+            padding: 15px 15px;
+            width: 100%;
+            flex: 1;
+        }
+
+        .flex-grow-1 {
+            flex-grow: 1;
+        }
+
+        #canvas-container {
+            height: 70%;
+            position: relative;
+        }
+
+        #input-container {
+            height: 30%;
+            margin-top: 10px;
+            /* Add margin to create spacing */
+        }
+
+        #preview {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            padding: 1rem;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        textarea {
+            resize: none;
+            height: 100%;
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        #controls button {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+        }
+
+        #controls .btn-clear {
+            background-color: red;
+            color: white;
+        }
+
+        #canvas-container,
+        #preview,
+        #input-container {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            /* Add shadow effect */
+            border-radius: 5px;
+            /* Add consistent border radius */
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark mb-3">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0">
+                <i class="fas fa-code"></i> AI WebDev
+            </span>
+            <button id="start-again" class="btn btn-primary btn-sm">Start again</button>
+
+        </div>
+    </nav>
+    <div class="custom-container">
+        <div class="row mb-3">
+            <div class="col">
+                <p class="">Your own smart multimodal <b>AI Web Developer</b>. Use left pane to draft your layout (optionally). Chat with the Agent in the right pane.
+                <br/>Preview of your website: <a href="/target_preview" target="_blank">Website Preview</a></p>
+            </div>
+        </div>  
+        <div class="row flex-grow-1">
+            <!-- Left side with canvas -->
+            <div class="col-lg-6 d-flex flex-column">
+                <!-- Canvas -->
+                <div id="canvas-container" class="border bg-white mb-2 flex-grow-1">
+                    <div id="controls">
+                        <button id="toggle-eraser" class="btn btn-primary" title="Toggle Eraser">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                        <button id="download-image" class="btn btn-success" title="Download Image">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button id="submit-image" class="btn btn-warning" title="Submit Image">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                        <button id="clear-canvas" class="btn btn-clear" title="Clear Canvas">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <canvas id="drawing-canvas" class="w-100 h-100"></canvas>
+                </div>
+            </div>
+            <!-- Right side with preview and text input -->
+            <div class="col-lg-6 d-flex flex-column">
+                <div id="preview" class="h-100 flex-grow-1">
+                    <h5 class="text-center mb-3">Preview</h5>
+                    <div id="preview-content">This is the preview area.</div>
+                </div>
+                <!-- Text input -->
+                <div id="input-container">
+                    <textarea id="text-input" class="form-control" placeholder="Enter text here..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function () {
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+            let isEraser = false;
+
+            // Resize canvas to fit container and preserve content
+            const resizeCanvas = () => {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                tempCtx.drawImage(canvas, 0, 0);
+
+                canvas.width = document.getElementById('canvas-container').clientWidth;
+                canvas.height = document.getElementById('canvas-container').clientHeight;
+                ctx.drawImage(tempCanvas, 0, 0);
+            };
+            resizeCanvas();
+            $(window).on('resize', resizeCanvas);
+
+            let isDrawing = false;
+            $('#drawing-canvas').on('mousedown', (e) => {
+                isDrawing = true;
+                ctx.beginPath();
+                ctx.moveTo(e.offsetX, e.offsetY);
+            });
+
+            $(document).on('mousemove', (e) => {
+                if (isDrawing) {
+                    const rect = canvas.getBoundingClientRect();
+                    const offsetX = e.clientX - rect.left;
+                    const offsetY = e.clientY - rect.top;
+
+                    if (isEraser) {
+                        ctx.globalCompositeOperation = 'destination-out';
+                        ctx.lineWidth = 15;
+                    } else {
+                        ctx.globalCompositeOperation = 'source-over';
+                        ctx.lineWidth = 1;
+                    }
+                    ctx.lineTo(offsetX, offsetY);
+                    ctx.stroke();
+                }
+            });
+
+            $(document).on('mouseup mouseleave', () => {
+                isDrawing = false;
+            });
+
+            $('#toggle-eraser').on('click', function () {
+                isEraser = !isEraser;
+                $(this).toggleClass('btn-primary btn-danger');
+            });
+
+            $('#clear-canvas').on('click', function () {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+
+            $('#download-image').on('click', function () {
+                alert('Download functionality triggered (to be implemented).');
+            });
+
+            $('#submit-image').on('click', function () {
+                const dataURL = canvas.toDataURL('image/png');
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/submit',
+                    data: {
+                        image: dataURL
+                    },
+                    success: function (response) {
+                        alert('Image submitted successfully.');
+                    },
+                    error: function (error) {
+                        alert('Error submitting image.');
+                    }
+                });
+            });
+
+            $('#start-again').on('click', function () {
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/send_message',
+                    data: JSON.stringify({ message: 'Start again' }),
+                    contentType: 'application/json',
+                    success: function (response) {
+                        alert('Message sent successfully.');
+                    },
+                    error: function (error) {
+                        alert('Error sending message.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
