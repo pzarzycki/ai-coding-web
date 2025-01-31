@@ -10,13 +10,14 @@
             "request": "launch",
             "program": "${workspaceFolder}/app.py",
             "env": {
-                "TEMPLATES_AUTO_RELOAD" :"1"
+                "TEMPLATES_AUTO_RELOAD" :"1",
             },
             "args": [
                 "run",
-                "--no-debugger",
-                "--no-reload"
+                "--debugger",
+                "--reload"
             ],
+            "cwd": "${workspaceFolder}",
             "jinja": true
         }
     ]

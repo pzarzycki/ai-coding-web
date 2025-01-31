@@ -7,36 +7,63 @@
     <title>Drawing App</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.1.0/github-markdown.min.css">
+
     <style>
-        html,
-        body {
-            height: 100%;
+
+    * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
             width: 100vw;
-            overflow-x: hidden;
-        }
-
-        body {
+            height: 100vh;
+            overflow: hidden; /* Prevents full-page scrolling */
             display: flex;
             flex-direction: column;
         }
 
-        .custom-container {
+        /* body {
+            height: -webkit-fill-available;
+            height: 100vh;
+        }
+        html {
+            height: -webkit-fill-available;
+            height: 100%;
+        } */
+
+
+
+
+        .header {
+            flex: 0 0 10%;
+            background: lightgray;
             display: flex;
-            flex-direction: column;
-            padding: 15px 15px;
-            width: 100%;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            border-bottom: 2px solid black;
+        }
+
+        .content {
+            padding: 10px;
             flex: 1;
-        }
-
-        .flex-grow-1 {
-            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 90%; /* Ensures it fills the remaining space */
         }
 
         #canvas-container {
             height: 70%;
             position: relative;
+        }
+
+        #canvas-wrapper {
+            margin-left: 24px;
         }
 
         #input-container {
@@ -49,8 +76,102 @@
             background-color: #fff;
             border: 1px solid #dee2e6;
             padding: 1rem;
-            height: 100%;
-            overflow-y: auto;
+            height: 70%;
+            max-height: 70%;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #preview-content {
+            flex-grow: 1;
+            overflow: auto;
+        }
+
+        #logs-content {
+            display: flex;
+            flex-direction: column;
+            overflow: scroll;
+            max-height: 100vh;
+            background-color: #222;
+        }
+        #logs-content  code{
+            white-space: nowrap;
+            color: #ddd;
+            font-size: smaller;
+        }
+
+        .tab-content .tab-pane {
+            display: none !important; /* Hide all tabs by default */
+        }
+
+        .tab-pane {
+            height: inherit;
+            min-height: 0;
+        }
+
+        .tab-content .tab-pane.active {
+            display: flex !important; /* Use flex instead of block */
+        }
+
+        .message-item{
+            display: flex;
+            flex-direction: row;
+            gap: 5px;
+            margin-bottom: 8px;
+            max-width: 100%;
+        }
+
+        .message-item .message-txt p:last-of-type {
+            margin-bottom: 0;
+        }
+        .message-txt .message-secondary {
+            font-size: small;
+        }
+        .message-txt .message-secondary > span{
+            border-radius: 8px;
+            background-color: #ddf;
+            padding: 2px 6px;
+            cursor: pointer;
+        }
+        .message-txt .message-secondary div {
+            display: none;
+            margin-left: 24px;
+        }
+
+        .uicon{
+            display: flex;
+            align-items: flex-start;
+            margin-block-start: 12px;
+
+        }
+        .message-txt{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 6px;
+        }
+        .message-item.user {
+            flex-direction: row-reverse;
+            margin-left: 32px;
+        }
+        .message-txt pre {
+            background-color: #ddd;
+            border: 1px solid #ccc;
+            overflow-x: auto;
+            padding: 6px;
+        }
+        .message-item.system  {
+            font-style: italic;
+            color: blue;
+            font-size: smaller;
+        }
+        .message-item.user .message-txt{
+            background-color: #dde;
+            border-radius: 6px;
+            border: 1px solid #aae;
+            padding: 6px 12px;
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         textarea {
@@ -81,7 +202,7 @@
         #canvas-container,
         #preview,
         #input-container {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2);
             /* Add shadow effect */
             border-radius: 5px;
             /* Add consistent border radius */
@@ -89,62 +210,97 @@
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Include Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
 </head>
 
 <body>
-    <nav class="navbar navbar-dark bg-dark mb-3">
-        <div class="container-fluid">
-            <span class="navbar-brand mb-0">
-                <i class="fas fa-code"></i> AI WebDev
-            </span>
-            <button id="start-again" class="btn btn-primary btn-sm">Start again</button>
+        <nav class="header navbar navbar-dark bg-dark mb-3">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0">
+                    <i class="fas fa-code"></i> AI WebDev
+                </span>
+                <button id="start-again" class="btn btn-primary btn-sm">Start again</button>
 
-        </div>
-    </nav>
-    <div class="custom-container">
-        <div class="row mb-3">
-            <div class="col">
-                <p class="">Your own smart multimodal <b>AI Web Developer</b>. Use left pane to draft your layout (optionally). Chat with the Agent in the right pane.
-                <br/>Preview of your website: <a href="/target_preview" target="_blank">Website Preview</a></p>
             </div>
-        </div>  
-        <div class="row flex-grow-1">
-            <!-- Left side with canvas -->
-            <div class="col-lg-6 d-flex flex-column">
-                <!-- Canvas -->
-                <div id="canvas-container" class="border bg-white mb-2 flex-grow-1">
-                    <div id="controls">
-                        <button id="toggle-eraser" class="btn btn-primary" title="Toggle Eraser">
-                            <i class="fas fa-eraser"></i>
-                        </button>
-                        <button id="download-image" class="btn btn-success" title="Download Image">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button id="submit-image" class="btn btn-warning" title="Submit Image">
-                            <i class="fas fa-upload"></i>
-                        </button>
-                        <button id="clear-canvas" class="btn btn-clear" title="Clear Canvas">
-                            <i class="fas fa-trash"></i>
-                        </button>
+        </nav>
+        <div class="content">
+            <div class="row mb-3">
+                <div class="d-flex">
+                    <p class="">Your own smart multimodal <b>AI Web Developer</b>. Use left pane to draft your layout (optionally). Chat with the Agent in the right pane.
+                    <br/>Preview of your website: <a href="/target_preview" target="_blank">Website Preview</a></p>
+                </div>
+            </div>  
+            <div class="d-flex" style="flex: 1 0 90%; height: 90%;">
+                <!-- Left side with canvas -->
+                <div class="d-flex flex-column" style="width: 50%; padding: 10px;">
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs small" id="myTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="canvas-tab" data-bs-toggle="tab" data-bs-target="#canvas-pane" type="button" role="tab" aria-controls="canvas-pane" aria-selected="true">Canvas</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="project-tab" data-bs-toggle="tab" data-bs-target="#project-pane" type="button" role="tab" aria-controls="project-pane" aria-selected="false">Project</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs-pane" type="button" role="tab" aria-controls="logs-pane" aria-selected="false">Logs</button>
+                        </li>
+                    </ul>
+                    <div class="d-flex tab-content h-100 flex-grow-1" id="myTabContent">
+                        <div class="d-flex tab-pane fade show active h-100" id="canvas-pane" role="tabpanel" aria-labelledby="canvas-tab">
+                            <!-- Canvas -->
+                            <div id="canvas-container" class="border bg-white mb-2 flex-grow-1">
+                                <div id="controls">
+                                    <button id="toggle-eraser" class="btn btn-primary" title="Toggle Eraser">
+                                        <i class="fas fa-eraser"></i>
+                                    </button>
+                                    <button id="clear-canvas" class="btn btn-clear" title="Clear Canvas">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <button id="submit-image" class="btn btn-warning" title="Submit Image">
+                                        <i class="fas fa-upload"></i>
+                                    </button>
+                                </div>
+                                <div id='canvas-wrapper' class="w-100 h-100 d-flex" >
+                                    <canvas id="drawing-canvas" class="w-100 h-100"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade h-100 p-2" id="project-pane" role="tabpanel" aria-labelledby="project-tab">
+                            <!-- Project content goes here -->
+                            <div class="p-3">Project content goes here.</div>
+                        </div>
+                        <div class="tab-pane fade h-100 w-100 p-2" id="logs-pane" role="tabpanel" aria-labelledby="logs-tab">
+                            <!-- Logs content goes here -->
+                            <div id="logs-content" class="h-100 p-3" style="flex: 1 0 90%; width: 100%; overflow-y: scroll;">
+                            </div>
+                        </div>
                     </div>
-                    <canvas id="drawing-canvas" class="w-100 h-100"></canvas>
                 </div>
-            </div>
-            <!-- Right side with preview and text input -->
-            <div class="col-lg-6 d-flex flex-column">
-                <div id="preview" class="h-100 flex-grow-1">
-                    <h5 class="text-center mb-3">Preview</h5>
-                    <div id="preview-content">This is the preview area.</div>
-                </div>
-                <!-- Text input -->
-                <div id="input-container">
-                    <textarea id="text-input" class="form-control" placeholder="Enter text here..."></textarea>
+                <!-- Right side with preview and text input -->
+                <div class="d-flex flex-column" style="width: 50%; padding: 10px;">
+                    <div id="preview" class="h-100 flex-grow-1" style="flex: 1 0 90%; height: 90%;">
+                        <div id="preview-content" style="">
+
+                        </div>
+                    </div>
+                    <!-- Text input -->
+                    <div id="input-container">
+                        <div class="input-group h-100">
+                            <textarea id="text-input" class="form-control" placeholder="Enter text here..."></textarea>
+                            <button id="send-text" class="btn btn-primary" type="button" title="Send Text">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+
     <script>
         $(document).ready(function () {
+
+        
             const canvas = document.getElementById('drawing-canvas');
             const ctx = canvas.getContext('2d');
             let isEraser = false;
@@ -157,8 +313,8 @@
                 tempCanvas.height = canvas.height;
                 tempCtx.drawImage(canvas, 0, 0);
 
-                canvas.width = document.getElementById('canvas-container').clientWidth;
-                canvas.height = document.getElementById('canvas-container').clientHeight;
+                canvas.width = document.getElementById('canvas-wrapper').clientWidth;
+                canvas.height = document.getElementById('canvas-wrapper').clientHeight;
                 ctx.drawImage(tempCanvas, 0, 0);
             };
             resizeCanvas();
@@ -223,20 +379,143 @@
                 });
             });
 
-            $('#start-again').on('click', function () {
+            const sendCommand = (command, data) => {
                 $.ajax({
                     type: 'POST',
-                    url: '/api/send_message',
-                    data: JSON.stringify({ message: 'Start again' }),
+                    url: '/api/command',
+                    data: JSON.stringify({ command, ...data }),
                     contentType: 'application/json',
                     success: function (response) {
-                        alert('Message sent successfully.');
+                        console.log(`${command} success.`, response);
                     },
                     error: function (error) {
                         alert('Error sending message.');
                     }
                 });
+            };
+
+            $('#start-again').on('click', function () {
+                sendCommand('restart', {});
             });
+
+            setTimeout(() => sendCommand('start', {}), 100);
+
+            const appendMessage = (type, message, secondary) => {
+                var icon = '';
+                switch (type) {
+                    case 'user':
+                        icon = 'fas fa-user';
+                        break;
+                    case 'agent':
+                        icon = 'fas fa-robot';
+                        break;
+                    case 'system':
+                        icon = 'fas fa-microchip';
+                        break;
+                    default:
+                        break;
+                }
+
+                if (secondary) {
+                    secondary = `<div class="message-secondary"><span><i class="fa-solid fa-angle-right"></i></span><div>${secondary}</div></div>`;
+                } else {
+                    secondary = '';
+                }
+
+                const messageDiv = `
+                    <div class="message-item ${type}">
+                        <div class="uicon"><i class="${icon} me-2"></i></div>
+                        <div class="message-txt">
+                            ${message}                    
+                            ${secondary}        
+                        </div>
+                    </div>
+                `;
+
+                $('#preview-content').append(messageDiv);
+                console.log("scroll:", $('#preview-content')[0].scrollHeight);
+                $('#preview-content').scrollTop($('#preview-content')[0].scrollHeight);
+            };
+
+            const sendUserMessage = () => {
+                const text = $('#text-input').val();
+                $('#text-input').val('');
+                //appendMessage('user', text);
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/user-message',
+                    data: JSON.stringify({ message: text }),
+                    contentType: 'application/json',
+                    success: function (response) {
+                        //appendMessage('agent', response.message);
+                        console.log('sendUserMessage() success.', response);
+                    },
+                    error: function (error) {
+                        alert('Error sending message.');
+                    }
+                });
+            };
+
+            $('#send-text').on('click', function () {
+                sendUserMessage();
+            });
+
+            $('#text-input').on('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendUserMessage();
+                }
+            });
+
+            var socket = io.connect("http://" + document.domain + ":" + location.port);
+            socket.on("connect", function() {
+                console.log("Connected to server!");
+            });            
+            socket.on("disconnect", function () {
+                console.log("Disconnected from WebSocket server");
+            });            
+
+            socket.on("chat_message", function(msg) {
+                console.log("Received message:", msg.data);
+                const messageContent = msg.data.txt || msg.data.html;
+                appendMessage(msg.data.type, messageContent, msg.data.secondary);
+
+            });
+            socket.on('project_message', function(msg) {
+                console.log("Received project message:", msg.data);
+                let projectStructure = msg.data.project;
+                projectStructure = projectStructure.replace(/\n/g, '<br/>').replace(/ /g, '&nbsp;');
+                $('#project-pane').html(projectStructure);
+            });
+            socket.on('render_message', function(msg) {
+                console.log("Received project message:", msg.data);
+                // data.img is base64 encoded with format specifier    
+                const img_src = msg.data.img;
+                $('#drawing-canvas').css({ // or #canvas-container
+                    'background-image': `url(${img_src})`,
+                    'background-size': 'contain',
+                    'background-repeat': 'no-repeat',
+                    'background-position': 'center'
+                });
+            });
+            socket.on('log_message', function(msg) {
+                console.log("Received project message:", msg.data);
+                item = `<code>${msg.data.txt}</code>`;                
+                $('#logs-content').append(item);
+            });
+
+            // Toggle visibility of message-secondary inner div and change icon
+            $(document).on('click', '.message-txt .message-secondary', function () {
+                const innerDiv = $(this).find('div');
+                const icon = $(this).find('span i');
+                innerDiv.toggle();
+                if (innerDiv.is(':visible')) {
+                    icon.removeClass('fa-angle-right').addClass('fa-angle-down');
+                } else {
+                    icon.removeClass('fa-angle-down').addClass('fa-angle-right');
+                }
+            });
+                
         });
     </script>
 </body>
