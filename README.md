@@ -1,17 +1,21 @@
 # AI Web Dev - Demo
 
+A simple multi-agent system for automatic full-stack web development. It generates application around Flask framework.
+It can create new files and update existing, install additional packages, test backend and frontend and recover from its own mistakes.
 
 Live demo:
 
 https://github.com/user-attachments/assets/f045822c-996a-44f4-a9a6-676b29265e2d
 
+> [!NOTE]  
+> Work in progres...
 
 ## Setup Instructions
 
 1. Clone the repository:
    ```
    git clone <repository-url>
-   cd my-flask-app
+   cd ai-coding-web
    ```
 
 2. Create a virtual environment:
@@ -33,6 +37,13 @@ https://github.com/user-attachments/assets/f045822c-996a-44f4-a9a6-676b29265e2d
    ```
    pip install -r requirements.txt
    ```
+
+5. Configure your OpenAI API key
+
+Create `.env` file with your OpenAI API Key:
+```
+OPENAI_API_KEY=<your open ai API key>
+```
 
 ## Usage
 
