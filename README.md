@@ -3,11 +3,8 @@
 
 Live demo:
 
-<div >
-      <a href="https://youtu.be/gOOKuihxKYk">
-         <img src="https://img.youtube.com/vi/gOOKuihxKYk/0.jpg" style="width:100%;">
-      </a>
-</div>
+https://github.com/user-attachments/assets/f045822c-996a-44f4-a9a6-676b29265e2d
+
 
 ## Setup Instructions
 
