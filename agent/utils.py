@@ -37,7 +37,8 @@ def scan_directory(directory):
             if item.startswith('.') or item == '__pycache__':
                 continue
             path = os.path.join(dir_path, item)
-            connector = "└─ " if i == len(items) - 1 else "├─ "
+            stype = '<folder>' if os.path.isdir(path) else '<file>'
+            connector = f"└─{stype} " if i == len(items) - 1 else f"├─{stype} "
             tree_str += f"{prefix}{connector}{item}/\n" if os.path.isdir(path) else f"{prefix}{connector}{item}\n"
             if os.path.isdir(path):
                 extension = "    " if i == len(items) - 1 else "│   "
@@ -45,3 +46,13 @@ def scan_directory(directory):
         return tree_str
 
     return ".\n" + list_files(directory)
+
+def truncate_content(content: str, max_length: int = 10_000) -> str:
+    if len(content) <= max_length:
+        return content
+    else:
+        return (
+            content[: max_length // 2]
+            + f"\n..._This content has been truncated to stay below {max_length} characters_...\n"
+            + content[-max_length // 2 :]
+        )

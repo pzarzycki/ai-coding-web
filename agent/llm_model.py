@@ -2,14 +2,16 @@ from dataclasses import dataclass
 import json
 import os
 import sys
+from time import sleep
 from typing import List, Optional, Callable, Union
 import openai
 import base64
 from io import BytesIO
 from PIL import Image
 
-from tools_core import BaseTool, ToolSpec
-from utils import b64_encode_image
+from agent.tools_core import BaseTool, ToolSpec
+from agent.utils import b64_encode_image
+from ws import WsSocket
 
 
 class LlmModel:
@@ -45,7 +47,9 @@ class LlmModel:
                         if tool_name not in tool_map:
                             raise ValueError(f"Tool '{tool_name}' not found in the tool list.")
                         print("Calling tool:", tool_name, args)
+                        WsSocket.send_messages('tool_message', {'tool_name': tool_name, 'args': str(args)[:100]})
                         tool_result = tool_map[tool_name].function (**args)
+                        #WsSocket.send_messages('tool_message', {'tool_name': '', 'args': ''})
                     except Exception as e:
                         exc_type, exc_value, exc_traceback = sys.exc_info()
                         print("Error calling tool:", tool_name, exc_type, exc_value)
@@ -124,8 +128,16 @@ class LlmModel:
 
         # Call OpenAI API
         client = openai.OpenAI(api_key=self.api_key)
-        response = client.chat.completions.create(**api_request)
-        
+
+        for _ in range(5):
+            try:            
+                response = client.chat.completions.create(**api_request)
+                break
+            except openai.RateLimitError:
+                sleep(1)
+        else:
+            raise RuntimeError("Too many openai API call retries! Hitting RateLimit.")
+
         assistant_message = response.choices[0].message.to_dict()
         self.messages.append(assistant_message)
 

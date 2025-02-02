@@ -1,2 +1,5 @@
 
-> Connect a selected open API to display to 5 NASDAQ stocks. Add interactive chart to display last 7 days.
+> Build a working demo illustrating a linear regression problem. Use popular ML libraries. Be creative! Build some nice visualisations.
+
+> I want to build an application that allows user to create new notes, browse available notes and search notes database. Build a beautiful website with a working demo!
+
